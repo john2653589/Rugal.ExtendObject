@@ -13,11 +13,34 @@ namespace Rugal.ExtendObject.Extention
 
             return Result;
         }
-        public static IDictionary<string, object> WithObjectProperty<TSource>(this IDictionary<string, object> Map, TSource Source)
+        public static IDictionary<string, object> ExtendWith<TSource>(this object Target, TSource Source, Func<TSource, object> WithFunc)
             where TSource : class
+        {
+            var Result = new Dictionary<string, object>()
+                .WithObjectProperty(Target)
+                .WithObjectProperty(WithFunc(Source));
+
+            return Result;
+        }
+        public static IDictionary<string, object> ExtendExcept<TSource>(this object Target, TSource Source, Func<TSource, object> ExceptFunc)
+           where TSource : class
+        {
+            var ExceptKeys = GetPairs(ExceptFunc(Source))
+                .Select(Item => Item.Key);
+
+            var Result = new Dictionary<string, object>()
+                .WithObjectProperty(Target)
+                .WithObjectProperty(Source, ExceptKeys);
+
+            return Result;
+        }
+        public static IDictionary<string, object> WithObjectProperty<TSource>(this IDictionary<string, object> Map, TSource Source, IEnumerable<string> ExceptKeys = null) where TSource : class
         {
             foreach (var Item in GetPairs(Source))
             {
+                if (ExceptKeys != null && ExceptKeys.Contains(Item.Key))
+                    continue;
+
                 if (!Map.TryAdd(Item.Key, Item.Value))
                     Map[Item.Key] = Item.Value;
             }
