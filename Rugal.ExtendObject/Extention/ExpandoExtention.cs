@@ -17,25 +17,37 @@ namespace Rugal.ExtendObject.Extention
             where TSource : class
         {
             var Result = new Dictionary<string, object>()
-                .WithObjectProperty(Target)
-                .WithObjectProperty(WithFunc(Source));
+                .WithObjectProperty(Target);
+
+            if (Source is not null)
+                Result.WithObjectProperty(WithFunc(Source));
 
             return Result;
         }
         public static IDictionary<string, object> ExtendExcept<TSource>(this object Target, TSource Source, Func<TSource, object> ExceptFunc)
            where TSource : class
         {
-            var ExceptKeys = GetPairs(ExceptFunc(Source))
-                .Select(Item => Item.Key);
-
             var Result = new Dictionary<string, object>()
-                .WithObjectProperty(Target)
-                .WithObjectProperty(Source, ExceptKeys);
+                .WithObjectProperty(Target);
 
+            if (Source is not null)
+            {
+                var ExceptKeys = GetPairs(ExceptFunc(Source))
+                    .Select(Item => Item.Key);
+
+                Result.WithObjectProperty(Source, ExceptKeys);
+            }
             return Result;
         }
         public static IDictionary<string, object> WithObjectProperty<TSource>(this IDictionary<string, object> Map, TSource Source, IEnumerable<string> ExceptKeys = null) where TSource : class
         {
+            if (Source is null)
+                return Map;
+
+            var Pairs = GetPairs(Source);
+            if (Pairs is null)
+                return Map;
+
             foreach (var Item in GetPairs(Source))
             {
                 if (ExceptKeys != null && ExceptKeys.Contains(Item.Key))
@@ -49,6 +61,9 @@ namespace Rugal.ExtendObject.Extention
         private static IEnumerable<KeyValuePair<string, object>> GetPairs<TSource>(TSource Source)
             where TSource : class
         {
+            if (Source is null)
+                return null;
+
             var Properties = Source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var Result = Properties
                 .Select(Property =>
